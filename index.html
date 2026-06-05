@@ -1,11 +1,277 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+<meta charset="UTF-8">
+<title>Lucas Pizza Rush - 369happyl</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+    }
+
+    body {
+        margin: 0;
+        background: linear-gradient(135deg, #ffcc70, #ff6b6b);
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+    }
+
+    .game {
+        width: 360px;
+        height: 520px;
+        background: #2b1d14;
+        border: 5px solid #fff3c4;
+        border-radius: 20px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 0 30px #0008;
+    }
+
+    .hud {
+        color: white;
+        text-align: center;
+        padding: 10px;
+        background: #0006;
+        font-weight: bold;
+    }
+
+    .hud span {
+        color: #ffd166;
+    }
+
+    #player {
+        width: 70px;
+        height: 70px;
+        position: absolute;
+        bottom: 20px;
+        left: 145px;
+        font-size: 55px;
+        text-align: center;
+    }
+
+    .pizza {
+        position: absolute;
+        top: -60px;
+        font-size: 45px;
+    }
+
+    .bomb {
+        position: absolute;
+        top: -60px;
+        font-size: 42px;
+    }
+
+    .start-screen,
+    .end-screen {
+        position: absolute;
+        inset: 0;
+        background: #000c;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 20px;
+        z-index: 10;
+    }
+
+    button {
+        background: #ffb703;
+        border: none;
+        padding: 12px 22px;
+        border-radius: 12px;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 5px 0 #b87300;
+    }
+
+    button:active {
+        transform: translateY(4px);
+        box-shadow: 0 1px 0 #b87300;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .title {
+        font-size: 28px;
+        color: #ffd166;
+    }
+</style>
 </head>
+
 <body>
-    
+
+<div class="game" id="game">
+    <div class="hud">
+        🍕 Lucas Pizza Rush 🍕<br>
+        Pontos: <span id="score">0</span> |
+        Vida: <span id="life">3</span><br>
+        By <span>369happyl</span>
+    </div>
+
+    <div id="player">🧑‍🍳</div>
+
+    <div class="start-screen" id="startScreen">
+        <h1 class="title">Lucas Pizza Rush</h1>
+        <p>Ajude o chef Lucas a pegar pizzas!</p>
+        <p>🍕 pega pizza<br>💣 desvia da bomba</p>
+        <button onclick="startGame()">Começar</button>
+    </div>
+
+    <div class="end-screen hidden" id="endScreen">
+        <h1>Fim de jogo 😭</h1>
+        <p>Sua pontuação foi:</p>
+        <h2 id="finalScore">0</h2>
+        <button onclick="restartGame()">Jogar de novo</button>
+    </div>
+</div>
+
+<script>
+const game = document.getElementById("game");
+const player = document.getElementById("player");
+const scoreText = document.getElementById("score");
+const lifeText = document.getElementById("life");
+const startScreen = document.getElementById("startScreen");
+const endScreen = document.getElementById("endScreen");
+const finalScore = document.getElementById("finalScore");
+
+let playerX = 145;
+let score = 0;
+let life = 3;
+let gameRunning = false;
+let spawnInterval;
+
+function startGame() {
+    startScreen.classList.add("hidden");
+    gameRunning = true;
+
+    spawnInterval = setInterval(() => {
+        createItem();
+    }, 900);
+}
+
+function restartGame() {
+    document.querySelectorAll(".pizza, .bomb").forEach(item => item.remove());
+
+    score = 0;
+    life = 3;
+    playerX = 145;
+
+    scoreText.textContent = score;
+    lifeText.textContent = life;
+    player.style.left = playerX + "px";
+
+    endScreen.classList.add("hidden");
+    gameRunning = true;
+
+    spawnInterval = setInterval(() => {
+        createItem();
+    }, 900);
+}
+
+function createItem() {
+    if (!gameRunning) return;
+
+    const item = document.createElement("div");
+
+    const isPizza = Math.random() > 0.25;
+
+    item.className = isPizza ? "pizza" : "bomb";
+    item.textContent = isPizza ? "🍕" : "💣";
+
+    item.style.left = Math.random() * 310 + "px";
+    game.appendChild(item);
+
+    let y = -60;
+
+    const fall = setInterval(() => {
+        if (!gameRunning) {
+            clearInterval(fall);
+            return;
+        }
+
+        y += 5 + score * 0.05;
+        item.style.top = y + "px";
+
+        const itemRect = item.getBoundingClientRect();
+        const playerRect = player.getBoundingClientRect();
+
+        if (
+            itemRect.bottom > playerRect.top &&
+            itemRect.top < playerRect.bottom &&
+            itemRect.right > playerRect.left &&
+            itemRect.left < playerRect.right
+        ) {
+            if (isPizza) {
+                score++;
+                scoreText.textContent = score;
+            } else {
+                life--;
+                lifeText.textContent = life;
+
+                if (life <= 0) {
+                    endGame();
+                }
+            }
+
+            item.remove();
+            clearInterval(fall);
+        }
+
+        if (y > 520) {
+            item.remove();
+            clearInterval(fall);
+        }
+    }, 30);
+}
+
+function endGame() {
+    gameRunning = false;
+    clearInterval(spawnInterval);
+    finalScore.textContent = score;
+    endScreen.classList.remove("hidden");
+}
+
+document.addEventListener("keydown", (e) => {
+    if (!gameRunning) return;
+
+    if (e.key === "ArrowLeft") {
+        playerX -= 25;
+    }
+
+    if (e.key === "ArrowRight") {
+        playerX += 25;
+    }
+
+    if (playerX < 0) playerX = 0;
+    if (playerX > 290) playerX = 290;
+
+    player.style.left = playerX + "px";
+});
+
+// Controle por toque no celular
+game.addEventListener("touchmove", (e) => {
+    if (!gameRunning) return;
+
+    const touch = e.touches[0];
+    const gameRect = game.getBoundingClientRect();
+
+    playerX = touch.clientX - gameRect.left - 35;
+
+    if (playerX < 0) playerX = 0;
+    if (playerX > 290) playerX = 290;
+
+    player.style.left = playerX + "px";
+});
+</script>
+
 </body>
 </html>
